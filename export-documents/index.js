@@ -14,10 +14,18 @@ const argv = yargs.option('database', {
     alias: "a",
     description: "Connection string to Cosmos DB account including access key",
     type: "string"
+}).option('allow-self-signed', {
+    description: "Allow the use of self-signed certificates when connecting to Cosmos DB",
+    type: 'boolean'
 })
 .help().argv;
 
+if (argv.allowSelfSigned) {
+    // allow self-signed certificates
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+}
 const client = new CosmosClient(argv.account);
+
 async function main() {
     const {database} = await client.database(argv.database).read();
     if (!database) {
