@@ -35,6 +35,15 @@ async function main() {
     }
     fs.mkdirSync("output");
 
+    const stripCosmosProps = (doc) => {
+        // bit clunky, but we don't want to include the cosmos specific fields
+        delete doc._rid;
+        delete doc._self;
+        delete doc._etag;
+        delete doc._attachments;
+        delete doc._ts;
+    };
+
     // read all, but fetch in batches
     const iterator = container.items.readAll();
     while (iterator.hasMoreResults()) {
@@ -46,6 +55,7 @@ async function main() {
             resources.forEach((doc) => {
                 tasks.push(new Promise((resolve, reject) => {
                     try {
+                        stripCosmosProps(doc);
                         fs.writeFile(`output/${doc.id}.json`, JSON.stringify(doc), () => {
                             resolve();
                         });
