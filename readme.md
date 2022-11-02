@@ -1,0 +1,1 @@
+## A collection of useful scripts for interacting with Cosmos DB databases

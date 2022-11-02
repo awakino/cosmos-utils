@@ -1,6 +1,7 @@
 const {CosmosClient} = require("@azure/cosmos");
 const yargs = require("yargs");
 const fs = require("fs");
+const {CosmosEntityFields} = require("../common/constants");
 
 const argv = yargs.option('database', {
     alias: 'd',
@@ -16,7 +17,12 @@ const argv = yargs.option('database', {
     type: "string"
 }).option('allow-self-signed', {
     description: "Allow the use of self-signed certificates when connecting to Cosmos DB",
-    type: 'boolean'
+    type: "boolean"
+}).options('output', {
+    alias: "o",
+    description: "Output folder files will be written to. If ommitted files will be written to <pwd>/output",
+    type: "string",
+    default: "output"
 })
 .help().argv;
 
@@ -38,18 +44,14 @@ async function main() {
     }
 
     // create the output folder
-    if (fs.existsSync("output")) {
-        fs.rmSync("output", {recursive: true, force: true});
+    if (fs.existsSync(argv.output)) {
+        fs.rmSync(argv.output, {recursive: true, force: true});
     }
-    fs.mkdirSync("output");
+    fs.mkdirSync(argv.output);
 
     const stripCosmosProps = (doc) => {
         // bit clunky, but we don't want to include the cosmos specific fields
-        delete doc._rid;
-        delete doc._self;
-        delete doc._etag;
-        delete doc._attachments;
-        delete doc._ts;
+        CosmosEntityFields.forEach(f => delete doc[f]);
     };
 
     // read all, but fetch in batches
