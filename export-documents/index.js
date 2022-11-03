@@ -66,7 +66,7 @@ async function main() {
                 tasks.push(new Promise((resolve, reject) => {
                     try {
                         stripCosmosProps(doc);
-                        fs.writeFile(`output/${doc.id}.json`, JSON.stringify(doc), () => {
+                        fs.writeFile(`${argv.output}/${doc.id}.json`, JSON.stringify(doc), () => {
                             resolve();
                         });
                     } catch (error) {
