@@ -48,29 +48,42 @@ async function main() {
 
     const files = fs.readdirSync(argv.source);
     console.log(`Uploading ${files.length} files to Cosmos DB`);
+    const tasks = [];
 
     files.forEach(async (f) => {
-        // readdir only gives us the filename
+        // readdir only gives us the filename and not the path
         const filename = path.resolve(argv.source, f);
         if (path.extname(filename) !== ".json") {
             console.warn(`The file ${f} does not have a .json file extension. It will be skipped`);
             return;
         }
 
-        // read the file
-        const data = fs.readFileSync(filename);
-        try {
-            // convert first to a string, and then to an object
-            const doc = JSON.parse(data.toString(argv.encoding));
+        const task = new Promise((resolve, reject) => {
+            fs.readFile(filename, async (err, data) => {
+                if (err) {
+                    reject(err);
+                }
 
-            // upload to cosmos using the ID field as the partition key
-            await container.items.create(doc, {partitionKey: doc.id});
-            console.log(`${f}`);
-        } catch {
-            console.error(`Error parsing file ${f}. Check that file contains valid JSON`);
-            return;
-        }
+                try {
+                    // convert first to a string, and then to an object
+                    const doc = JSON.parse(data.toString(argv.encoding));
+
+                    // upload to cosmos using the ID field as the partition key
+                    await container.items.create(doc, {partitionKey: doc.id});
+                    resolve(filename);
+                } catch {
+                    reject(`Error parsing file ${f}. Check that file contains valid JSON`);
+                }
+            });
+        })
+        .then(result => console.log(result))
+        .catch(error => console.error(error));
+
+        tasks.push(task);
     });
+
+    // wait for all upload tasks to complete
+    await Promise.all(tasks);
 
     console.log("File upload complete");
 }
